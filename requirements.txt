@@ -1,0 +1,30 @@
+# AHPRA Scraper Dependencies
+
+# HTTP requests (for API-based extraction)
+requests>=2.31.0
+
+# Browser automation (for discovery phase)
+playwright>=1.40.0
+
+# Data processing
+pandas>=2.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Progress bars
+tqdm>=4.66.0
+
+# Logging
+loguru>=0.7.0
+
+# HTML parsing (backup for simple parsing)
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+
+# Async support
+aiofiles>=23.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0

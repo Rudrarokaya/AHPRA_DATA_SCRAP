@@ -1,0 +1,12 @@
+Test Results for prefix 'A-Z'
+Run at: 2026-01-16T16:28:21.412020
+Duration: 5.2 minutes
+Combinations tested: 5
+Total discovered: 250
+
+Detailed results:
+✓ Medical Practitioner | Victoria: 50
+✓ Medical Practitioner | Victoria: 50
+✓ Medical Practitioner | Victoria: 50
+✓ Medical Practitioner | Victoria: 50
+✓ Medical Practitioner | Victoria: 50

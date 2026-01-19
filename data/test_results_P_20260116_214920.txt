@@ -1,0 +1,15 @@
+Test Results for prefix 'P'
+Run at: 2026-01-16T21:49:20.886827
+Duration: 8.1 minutes
+Combinations tested: 8
+Total discovered: 400
+
+Detailed results:
+✓ Nurse | Australian Capital Territory: 50
+✓ Nurse | New South Wales: 50
+✓ Nurse | Northern Territory: 50
+✓ Nurse | Queensland: 50
+✓ Nurse | South Australia: 50
+✓ Nurse | Tasmania: 50
+✓ Nurse | Victoria: 50
+✓ Nurse | Western Australia: 50

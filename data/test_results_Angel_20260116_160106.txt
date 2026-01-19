@@ -1,0 +1,12 @@
+Test Results for prefix 'Angel'
+Run at: 2026-01-16T16:01:06.833903
+Duration: 5.1 minutes
+Combinations tested: 5
+Total discovered: 25
+
+Detailed results:
+✓ Aboriginal and Torres Strait Islander Health Practitioner | Australian Capital Territory: 5
+✓ Aboriginal and Torres Strait Islander Health Practitioner | New South Wales: 5
+✓ Aboriginal and Torres Strait Islander Health Practitioner | Northern Territory: 5
+✓ Aboriginal and Torres Strait Islander Health Practitioner | Queensland: 5
+✓ Aboriginal and Torres Strait Islander Health Practitioner | South Australia: 5

@@ -1,0 +1,10 @@
+Test Results for prefix 'A'
+Run at: 2026-01-16T16:43:21.657472
+Duration: 3.2 minutes
+Combinations tested: 3
+Total discovered: 150
+
+Detailed results:
+✓ Medical Practitioner | Australian Capital Territory: 50
+✓ Medical Practitioner | New South Wales: 50
+✓ Medical Practitioner | Northern Territory: 50

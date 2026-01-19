@@ -1,0 +1,8 @@
+Test Results for prefix 'A'
+Run at: 2026-01-16T21:38:03.981318
+Duration: 1.3 minutes
+Combinations tested: 1
+Total discovered: 50
+
+Detailed results:
+✓ Nurse | Queensland: 50

@@ -1,0 +1,15 @@
+Test Results for prefix 'Angel'
+Run at: 2026-01-16T16:09:36.678443
+Duration: 7.8 minutes
+Combinations tested: 8
+Total discovered: 400
+
+Detailed results:
+✓ Medical Practitioner | Australian Capital Territory: 50
+✓ Medical Practitioner | New South Wales: 50
+✓ Medical Practitioner | Northern Territory: 50
+✓ Medical Practitioner | Queensland: 50
+✓ Medical Practitioner | South Australia: 50
+✓ Medical Practitioner | Tasmania: 50
+✓ Medical Practitioner | Victoria: 50
+✓ Medical Practitioner | Western Australia: 50
