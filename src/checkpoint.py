@@ -52,6 +52,7 @@ class CheckpointManager:
         self.completed_combinations: Set[str] = set()  # For multi-dimensional search
         self.scraped_reg_ids: Set[str] = set()  # In-memory set for dedup during discovery
         self.extracted_reg_ids: Set[str] = set()
+        self.failed_reg_ids: Set[str] = set()  # Track IDs that failed extraction
         self.current_prefix: Optional[str] = None
         self.current_page: int = 0
         self.current_combination: Optional[str] = None  # For multi-dimensional search
@@ -115,6 +116,7 @@ class CheckpointManager:
             self.completed_prefixes = set(data.get('completed_prefixes', []))
             self.completed_combinations = set(data.get('completed_combinations', []))
             self.extracted_reg_ids = set(data.get('extracted_reg_ids', []))
+            self.failed_reg_ids = set(data.get('failed_reg_ids', []))
             self.current_prefix = data.get('current_prefix')
             self.current_page = data.get('current_page', 0)
             self.current_combination = data.get('current_combination')
@@ -175,6 +177,7 @@ class CheckpointManager:
                 'completed_prefixes': list(self.completed_prefixes),
                 'completed_combinations': list(self.completed_combinations),
                 'extracted_reg_ids': list(self.extracted_reg_ids),
+                'failed_reg_ids': list(self.failed_reg_ids),
                 'current_prefix': self.current_prefix,
                 'current_page': self.current_page,
                 'current_combination': self.current_combination,

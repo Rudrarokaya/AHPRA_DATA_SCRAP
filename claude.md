@@ -24,9 +24,23 @@ python main.py discover --comprehensive    # Comprehensive (all prefixes A-ZZZ)
 python main.py discover -c --depth 2       # Comprehensive, depth 2 only (AA-ZZ)
 python main.py discover --no-headless      # Visible browser for debugging
 
-# Extraction Stage (get detailed data)
-python main.py extract                     # Extract all pending
-python main.py extract --limit 100         # Extract first 100 only
+# Multi-Dimensional Discovery (profession × state × prefix)
+python main.py discover --multi-dimensional          # Search all profession/state/prefix combos
+python main.py discover -m                           # Short form
+python main.py discover -m --include-suburbs         # Include suburb-level searches (NSW/VIC/QLD)
+
+# COMBINED MODE: Multi-Dimensional + Comprehensive Prefixes (Maximum Coverage)
+python main.py discover -m -c                        # profession × state × prefixes (A-ZZZ)
+python main.py discover -m -c --depth 2              # profession × state × prefixes (A-ZZ)
+python main.py discover -m -c --depth 1              # Same as -m alone (A-Z only)
+
+# Extraction Stage (get detailed data) - USE BROWSER METHOD
+python phase2_browser_extract.py                    # Extract all pending (browser-based)
+python phase2_browser_extract.py --limit 100        # Extract first 100 only
+python phase2_browser_extract.py --no-headless      # Visible browser for debugging
+
+# Alternative: HTTP-based (may hit WAF after ~19 requests)
+python phase2_extract.py --limit 100                # HTTP POST method
 
 # Status & Management
 python main.py status                      # Show progress summary
@@ -49,8 +63,23 @@ python main.py test-id MED0004000408
 
 ### 1. Two-Stage Architecture
 - **Stage 1 (Discovery):** Browser-based prefix search to find all practitioner registration IDs only
-- **Stage 2 (Extraction):** HTTP POST API requests to fetch detailed profile data
-- **Rationale:** Discovery requires JavaScript rendering; extraction uses lightweight HTTP requests with 30-40s delays for respectful scraping
+- **Stage 2 (Extraction):** Browser-based extraction of detailed profile data
+- **Rationale:** Discovery requires JavaScript rendering; extraction also uses browser to bypass Imperva WAF protection
+
+### 2. Extraction Approach (IMPORTANT)
+The AHPRA website uses **Imperva/Incapsula WAF** which blocks HTTP POST requests after ~19 calls.
+
+**Solution:** Use Playwright browser with natural user interactions:
+1. Press `Escape` to dismiss any overlays
+2. `type()` (not `fill()`) to trigger the typeahead search
+3. Click search button with `force=True`
+4. Use JavaScript to click the `a.practitioner-name-link` (results are in a modal)
+5. Extract data from the detail page
+6. Navigate back and repeat
+
+**Key files:**
+- `phase2_browser_extract.py` - Main browser-based extraction (RECOMMENDED)
+- `phase2_extract.py` - HTTP-based extraction (blocked by WAF after ~19 requests)
 
 ### 2. Prefix Search Strategy
 - Uses recursive name prefixes (A, B, ..., AA, AB, ..., AAA, AAB, ...)
@@ -81,48 +110,44 @@ python main.py test-id MED0004000408
 
 | Delay Type | Setting | Current Value | Purpose |
 |------------|---------|---------------|---------|
-| Primary scrape delay | `MIN_DELAY` | 30 seconds | Between API calls |
-| Primary scrape delay | `MAX_DELAY` | 40 seconds | Between API calls |
-| UI interaction delay | `UI_MIN_DELAY` | 0.2 seconds | Form/button interactions |
-| UI interaction delay | `UI_MAX_DELAY` | 0.6 seconds | Form/button interactions |
-| Retry delay | `RETRY_DELAY` | 60 seconds | After failed request |
+| Browser extraction delay | `MIN_DELAY` | 15 seconds | Between browser extractions |
+| Browser extraction delay | `MAX_DELAY` | 25 seconds | Between browser extractions |
+| Short cooldown | `SHORT_COOLDOWN_DURATION` | 60 seconds | After 3 failures |
+| Long cooldown | `LONG_COOLDOWN_DURATION` | 300 seconds | After 3 consecutive failures |
 
 ### Where Delays Are Applied
 
-**In `src/api_client.py`:**
-- `_apply_delay()` (line 67-70): Uses `MIN_DELAY`/`MAX_DELAY` (30-40s) before each HTTP POST request
+**In `phase2_browser_extract.py`:**
+- Base delay (15-25s) between each extraction = ~3 req/min
+- 60s cooldown after 3 total failures (resets WAF short-term window)
+- 300s (5-min) cooldown after 3 consecutive failures (resets WAF sliding window)
 
-**In `src/discovery.py`:**
-- `random_delay()` - After page navigation, search submission (30-40s for server requests)
-- `ui_delay()` - For form filling, dropdown clicks, button presses (0.2-0.6s)
-- `random_delay(RETRY_DELAY, ...)` - After errors (60s+)
-
-**In `src/utils.py`:**
-- `random_delay()` - Primary delay function using `MIN_DELAY`/`MAX_DELAY` (30-40s)
-- `ui_delay()` - UI interaction delay using `UI_MIN_DELAY`/`UI_MAX_DELAY` (0.2-0.6s)
+**In `src/api_client.py`:** (HTTP method - may be blocked by WAF)
+- `_apply_delay()`: 15s base + 5s per consecutive failure
+- Adaptive backoff: 15s → 20s → 25s → 30s
 
 ---
 
 ## Pending To-Do Items
 
 ### High Priority
-1. **Test with new 30-40s delays** - Verify scraper still works correctly with longer delays
-2. **Monitor checkpoint saves** - Ensure checkpoints save properly during long waits
+1. **Run full extraction** - Execute browser-based extraction on all discovered IDs
+2. **Monitor for CAPTCHA** - If CAPTCHA appears, increase delays or add cooldowns
 
 ### Medium Priority
-3. **Add progress estimation** - Calculate ETA based on current rate
-4. **Implement parallel discovery** - Run multiple browser instances (carefully, respecting rate limits)
-5. **Database output option** - Add SQLite/PostgreSQL output alongside CSV
+3. **Database output option** - Add SQLite/PostgreSQL output alongside CSV
+4. **Parallel discovery** - Run multiple browser instances (carefully, respecting rate limits)
 
 ### Low Priority / Future Enhancements
-6. **Web dashboard** - Real-time progress monitoring UI
-7. **Email notifications** - Alert on completion or errors
-8. **Incremental updates** - Detect changed practitioner records
-9. **Data validation** - Verify extracted data quality
+5. **Web dashboard** - Real-time progress monitoring UI
+6. **Email notifications** - Alert on completion or errors
+7. **Incremental updates** - Detect changed practitioner records
 
-### Known Issues
-- Profile page extraction requires API workaround (implemented)
-- Search state persistence issue after first search (resolved - navigate to fresh page)
+### Known Issues (Resolved)
+- ~~Imperva WAF blocks HTTP POST after ~19 requests~~ → Use browser-based extraction
+- ~~Search results not clickable~~ → Use JavaScript click on `a.practitioner-name-link`
+- ~~Modal overlay blocking clicks~~ → Press `Escape` before interactions
+- ~~`fill()` doesn't trigger typeahead~~ → Use `type(delay=50)` instead
 
 ---
 
@@ -186,33 +211,35 @@ logger.debug("Detailed debug info")
 
 ```
 AHPRA data scrape/
-├── main.py                 # CLI entry point (argparse)
-├── requirements.txt        # Python dependencies
-├── ARCHITECTURE.md         # Detailed architecture docs
-├── claude.md               # This file (AI context)
-├── .env.example            # Environment variable template
+├── main.py                     # CLI entry point (argparse)
+├── phase2_browser_extract.py   # Browser-based extraction (RECOMMENDED)
+├── phase2_extract.py           # HTTP-based extraction (may hit WAF)
+├── requirements.txt            # Python dependencies
+├── ARCHITECTURE.md             # Detailed architecture docs
+├── CLAUDE.md                   # This file (AI context)
+├── .env.example                # Environment variable template
 │
 ├── config/
-│   ├── settings.py         # All configuration constants
-│   └── professions.py      # AHPRA professions, states data
+│   ├── settings.py             # All configuration constants
+│   └── professions.py          # AHPRA professions, states data
 │
 ├── src/
-│   ├── browser.py          # Playwright browser automation
-│   ├── api_client.py       # HTTP client for extraction
-│   ├── search.py           # Prefix search algorithms
-│   ├── discovery.py        # Stage 1: Find practitioners
-│   ├── extractor.py        # Stage 2: Extract details
-│   ├── parser.py           # HTML parsing (BeautifulSoup)
-│   ├── checkpoint.py       # Progress tracking (JSON)
-│   └── utils.py            # Utilities (logging, delays)
+│   ├── browser.py              # Playwright browser automation
+│   ├── api_client.py           # HTTP client (with WAF bypass headers)
+│   ├── search.py               # Prefix search algorithms
+│   ├── discovery.py            # Stage 1: Find practitioners
+│   ├── extractor.py            # Stage 2: HTTP extraction
+│   ├── parser.py               # HTML parsing (BeautifulSoup)
+│   ├── checkpoint.py           # Progress tracking (JSON)
+│   └── utils.py                # Utilities (logging, delays)
 │
 ├── data/
-│   ├── discovery/          # reg_ids.txt (discovered IDs)
-│   ├── extracted/          # practitioners_YYYY-MM-DD.csv
-│   ├── final/              # Merged/cleaned output
-│   └── checkpoints/        # ahpra_checkpoint.json
+│   ├── discovery/              # discovered_ids.json (discovered IDs)
+│   ├── extracted/              # practitioners_YYYY-MM-DD.csv
+│   ├── backup/                 # extracted_backup.jsonl (JSONL backup)
+│   └── checkpoints/            # ahpra_checkpoint.json
 │
-└── logs/                   # Rotated daily log files
+└── logs/                       # Rotated daily log files
 ```
 
 ---
@@ -227,12 +254,16 @@ SELECTORS = {
     'profession_dropdown': '#health-profession-dropdown',
     'state_dropdown': '#state-dropdown',
 
-    # Results
-    'result_row': '.search-results-table-row[data-practitioner-row-id]',
-    'results_table': '.search-results-table-body',
+    # Search Results (appear in a MODAL, not a table!)
+    'result_row': 'div[data-practitioner-id]',           # NOT data-practitioner-row-id
+    'practitioner_name_link': 'a.practitioner-name-link', # Blue clickable name
+    'modal_body': '.modal-body',
     'no_results': '.no-results-message',
 }
 ```
+
+**IMPORTANT:** Search results appear in a modal popup. The name link (`a.practitioner-name-link`)
+is not "visible" to Playwright's normal click, so use JavaScript: `document.querySelector('a.practitioner-name-link').click()`
 
 ---
 

@@ -31,8 +31,8 @@ EXTRACTED_BACKUP_FILE = BACKUP_DIR / "extracted_backup.jsonl"
 
 # Rate limiting (respectful approach - avoid server overload)
 # These are the primary delays between data scrapes/API calls
-MIN_DELAY = 15  # Minimum seconds between requests (respectful to AHPRA servers)
-MAX_DELAY = 20  # Maximum seconds between requests
+MIN_DELAY = 25  # Minimum seconds between requests (increased to avoid CAPTCHA)
+MAX_DELAY = 35  # Maximum seconds between requests
 
 # UI interaction delays (for form filling, dropdown clicks within same page)
 UI_MIN_DELAY = 0.2  # Quick UI interactions
@@ -42,8 +42,8 @@ UI_MAX_DELAY = 0.6  # Quick UI interactions
 # These are longer delays to avoid triggering CAPTCHA when using sidebar filters
 # Note: 7-10s triggers CAPTCHA, 10-15s works fine
 # Testing 8-11s as potential optimization (monitor for CAPTCHA)
-SIDEBAR_FILTER_MIN_DELAY = 8   # Minimum seconds between sidebar filter changes
-SIDEBAR_FILTER_MAX_DELAY = 11  # Maximum seconds between sidebar filter changes
+SIDEBAR_FILTER_MIN_DELAY = 9   # Minimum seconds between sidebar filter changes
+SIDEBAR_FILTER_MAX_DELAY = 12  # Maximum seconds between sidebar filter changes
 
 # Search settings
 MAX_RESULTS_PER_PAGE = 50  # AHPRA typically shows ~50 results per page

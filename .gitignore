@@ -31,12 +31,23 @@ env/
 .env.local
 
 # Data files (large, regeneratable)
-data/discovery/
 data/extracted/
+data/backup/
 data/final/
-data/checkpoints/
 *.csv
-*.json
+*.jsonl
+
+# Discovery - exclude test files, keep main checkpoint
+data/discovery/test_*.raw.txt
+
+# Checkpoints - exclude test files, keep main checkpoint
+data/checkpoints/test_*
+data/checkpoints/phase2_*
+
+# Debug files
+debug_*.html
+debug_*.png
+debug_*.py
 
 # Keep data directory structure
 !data/.gitkeep
@@ -49,9 +60,10 @@ data/checkpoints/
 logs/
 *.log
 
-# IDE
+# IDE and tools
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~

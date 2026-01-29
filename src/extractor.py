@@ -64,6 +64,9 @@ class ExtractionEngine:
         self._extraction_start_time: Optional[float] = None
         self._last_progress_time: float = 0
 
+        # CSV deduplication
+        self._csv_reg_ids: set = set()
+
     def initialize(self) -> bool:
         """
         Initialize the extraction engine.
@@ -83,6 +86,19 @@ class ExtractionEngine:
 
         # Check if we're resuming (file exists)
         file_exists = self.output_file.exists()
+
+        # Scan existing CSV for reg_ids (deduplication)
+        if file_exists:
+            try:
+                with open(self.output_file, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        if row.get('reg_id'):
+                            self._csv_reg_ids.add(row['reg_id'])
+                if self._csv_reg_ids:
+                    logger.info(f"Loaded {len(self._csv_reg_ids)} reg_ids from existing CSV")
+            except Exception as e:
+                logger.warning(f"Failed to scan existing CSV: {e}")
 
         # Open file for appending
         self._output_handle = open(self.output_file, 'a', newline='', encoding='utf-8')
@@ -367,7 +383,35 @@ class ExtractionEngine:
         html = self.api_client.fetch_practitioner(reg_id)
 
         if not html:
-            logger.warning(f"Failed to fetch data for {reg_id}")
+            logger.warning(f"Failed to fetch data for {reg_id} - no HTML returned")
+            return None
+
+        # Debug: Check for rate limiting or CAPTCHA indicators
+        html_lower = html.lower()
+        blocking_detected = False
+        blocking_type = None
+
+        if 'captcha' in html_lower or 'recaptcha' in html_lower:
+            logger.error(f"CAPTCHA detected for {reg_id}! Server is rate limiting.")
+            blocking_detected = True
+            blocking_type = "captcha"
+        elif 'too many requests' in html_lower or 'rate limit' in html_lower:
+            logger.error(f"Rate limit page detected for {reg_id}!")
+            blocking_detected = True
+            blocking_type = "ratelimit"
+        elif 'access denied' in html_lower or 'blocked' in html_lower:
+            logger.error(f"Access denied page detected for {reg_id}!")
+            blocking_detected = True
+            blocking_type = "blocked"
+
+        if blocking_detected:
+            # Save the blocking page for analysis
+            try:
+                debug_file = Path(f"debug_{blocking_type}_{reg_id}.html")
+                debug_file.write_text(html, encoding='utf-8')
+                logger.info(f"Saved blocking page to {debug_file}")
+            except Exception as e:
+                logger.debug(f"Failed to save debug HTML: {e}")
             return None
 
         try:
@@ -378,14 +422,18 @@ class ExtractionEngine:
             if not data.get('reg_id'):
                 data['reg_id'] = reg_id
 
-            # Validate we got some data
-            if data.get('name') or data.get('profession'):
+            # Validate we got some data - accept if we have reg_id + any other field
+            # This is less strict than requiring name OR profession
+            valid_fields = sum(1 for v in data.values() if v is not None)
+            if valid_fields >= 2:  # At least reg_id + one other field
                 return data
 
-            logger.debug(f"Incomplete data for {reg_id}")
+            # Debug: Log what we got back when parsing fails
+            logger.warning(f"Incomplete data for {reg_id}: only {valid_fields} valid fields")
+            logger.debug(f"HTML length: {len(html)} chars, first 500 chars: {html[:500]}")
 
         except Exception as e:
-            logger.debug(f"Parse error for {reg_id}: {e}")
+            logger.warning(f"Parse error for {reg_id}: {e}")
 
         return None
 
@@ -397,9 +445,19 @@ class ExtractionEngine:
             data: Practitioner data dictionary
         """
         try:
+            # Check for duplicates in CSV
+            reg_id = data.get('reg_id')
+            if reg_id and reg_id in self._csv_reg_ids:
+                logger.debug(f"Skipping CSV write - {reg_id} already exists")
+                return
+
             self._csv_writer.writerow(data)
             # IMMEDIATELY flush to prevent data loss
             self._output_handle.flush()
+
+            # Track in dedup set
+            if reg_id:
+                self._csv_reg_ids.add(reg_id)
         except Exception as e:
             logger.error(f"Failed to write record: {e}")
 

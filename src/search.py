@@ -445,12 +445,14 @@ class MultiDimensionalSearch:
         completed = completed_combinations or set()
         combinations = []
 
-        # Use test_prefix if provided, otherwise generate all prefixes
+        # Use test_prefix if provided, otherwise generate all prefixes up to max_prefix_depth
         if self.test_prefix:
             prefixes = [self.test_prefix]
             logger.info(f"TEST MODE: Using single prefix '{self.test_prefix}'")
         else:
-            prefixes = list(self.prefix_gen.generate_prefixes_at_depth(1))
+            # Generate prefixes for all depths up to max_prefix_depth
+            prefixes = list(self.prefix_gen.generate_all_prefixes(self.max_prefix_depth))
+            logger.info(f"Generating prefixes up to depth {self.max_prefix_depth}: {len(prefixes)} prefixes")
 
         for profession in self.professions:
             for state in self.states:
@@ -563,11 +565,12 @@ class MultiDimensionalSearch:
         num_professions = len(self.professions)
         num_states = len(self.states)
 
-        # Account for test_prefix mode (single prefix vs A-Z)
+        # Account for test_prefix mode or calculate total prefixes based on max depth
         if self.test_prefix:
             num_prefixes = 1
         else:
-            num_prefixes = 26  # A-Z at depth 1
+            # Calculate total prefixes for all depths up to max_prefix_depth
+            num_prefixes = self.prefix_gen.get_total_prefixes(self.max_prefix_depth)
 
         # Base combinations: profession × state × prefix
         base_count = num_professions * num_states * num_prefixes
@@ -583,6 +586,7 @@ class MultiDimensionalSearch:
             'professions': num_professions,
             'states': num_states,
             'prefixes': num_prefixes,
+            'max_prefix_depth': self.max_prefix_depth,
             'test_prefix': self.test_prefix,
             'base_combinations': base_count,
             'suburb_combinations': suburb_count,
@@ -657,12 +661,17 @@ class SearchOrchestrator:
         self.test_prefix = test_prefix
 
         if multi_dimensional:
+            # Use max_depth for multi-dimensional if combining modes
+            prefix_depth = max_depth if comprehensive else 1
             self.multi_search = MultiDimensionalSearch(
                 include_suburbs=include_suburbs,
-                max_prefix_depth=1,  # A-Z only for multi-dimensional
+                max_prefix_depth=prefix_depth,
                 test_prefix=test_prefix
             )
-            logger.info("Using MULTI-DIMENSIONAL search mode (profession × state × prefix)")
+            mode_name = "COMBINED" if comprehensive else "MULTI-DIMENSIONAL"
+            logger.info(f"Using {mode_name} search mode (profession × state × prefix)")
+            if comprehensive:
+                logger.info(f"  Prefix depth: 1-{max_depth} (A-Z through {'A'*max_depth}-{'Z'*max_depth})")
             estimates = self.multi_search.estimate_total_combinations()
             logger.info(f"Total combinations planned: {estimates['total']:,}")
             if include_suburbs:

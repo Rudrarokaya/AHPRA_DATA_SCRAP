@@ -9,6 +9,8 @@ Usage:
     python main.py discover --comprehensive              Comprehensive (A-Z, AA-ZZ, AAA-ZZZ)
     python main.py discover --multi-dimensional          Multi-dimensional (profession × state × prefix)
     python main.py discover -m --include-suburbs         Multi-dimensional with suburbs
+    python main.py discover -m -c                        COMBINED: Multi-dimensional + all prefix depths
+    python main.py discover -m -c --depth 2              COMBINED: Multi-dimensional + depth 2 (AA-ZZ)
     python main.py discover --no-headless                Visible browser for debugging
     python main.py extract [--limit N]                   Extract practitioners via API
     python main.py status                                Show progress
@@ -51,22 +53,36 @@ def cmd_discover(args):
 
     test_prefix = args.test_prefix.upper() if args.test_prefix else None
 
-    if multi_dimensional:
-        logger.info("Search mode: MULTI-DIMENSIONAL (profession × state × prefix)")
+    # Calculate total prefixes for the given depth
+    def calc_prefix_count(depth):
+        return sum(26 ** d for d in range(1, depth + 1))
+
+    if multi_dimensional and comprehensive:
+        # COMBINED MODE: Multi-dimensional + comprehensive prefixes
+        logger.info(f"Search mode: COMBINED (profession × state × prefix depths 1-{max_depth})")
+        total_prefixes = calc_prefix_count(max_depth)
         if test_prefix:
-            # Test mode with single prefix
+            base = 16 * 8 * 1
+            logger.info(f"  TEST MODE: Single prefix '{test_prefix}' only")
+        else:
+            base = 16 * 8 * total_prefixes
+        if include_suburbs:
+            logger.info("  Including suburb-level searches for NSW, VIC, QLD")
+        logger.info(f"  Total prefixes per profession/state: {total_prefixes:,}")
+        logger.info(f"  Base combinations: {base:,}")
+    elif multi_dimensional:
+        logger.info("Search mode: MULTI-DIMENSIONAL (profession × state × prefix A-Z)")
+        if test_prefix:
             base = 16 * 8 * 1  # 16 professions × 8 states × 1 prefix
             logger.info(f"  TEST MODE: Single prefix '{test_prefix}' only")
         else:
-            # Calculate total combinations
             base = 16 * 8 * 26  # 16 professions × 8 states × 26 letters
         if include_suburbs:
             logger.info("  Including suburb-level searches for NSW, VIC, QLD")
         logger.info(f"  Base combinations: {base:,}")
     elif comprehensive:
         logger.info(f"Search mode: COMPREHENSIVE (all depths up to {max_depth})")
-        # Calculate total searches
-        total = sum(26 ** d for d in range(1, max_depth + 1))
+        total = calc_prefix_count(max_depth)
         logger.info(f"Total prefixes to search: {total:,}")
         logger.info("  Depth 1 (A-Z): 26")
         if max_depth >= 2:
@@ -347,8 +363,10 @@ Examples:
   python main.py discover                       Start/resume discovery (adaptive mode)
   python main.py discover --comprehensive       Comprehensive search (A-Z, AA-ZZ, AAA-ZZZ)
   python main.py discover -c --depth 2          Comprehensive up to depth 2 (A-Z, AA-ZZ)
-  python main.py discover --multi-dimensional   Search by profession × state × prefix
+  python main.py discover --multi-dimensional   Search by profession × state × prefix (A-Z only)
   python main.py discover -m --include-suburbs  Multi-dimensional with suburb-level searches
+  python main.py discover -m -c                 COMBINED: Multi-dimensional + comprehensive prefixes
+  python main.py discover -m -c --depth 2       COMBINED: profession × state × AA-ZZ
   python main.py discover --no-headless         Run with visible browser
   python main.py extract --limit 100            Extract first 100 practitioners (via API)
   python main.py status                         Show progress
