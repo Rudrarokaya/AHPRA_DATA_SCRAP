@@ -31,31 +31,31 @@ EXTRACTED_BACKUP_FILE = BACKUP_DIR / "extracted_backup.jsonl"
 
 # Rate limiting (respectful approach - avoid server overload)
 # These are the primary delays between data scrapes/API calls
-MIN_DELAY = 25  # Minimum seconds between requests (increased to avoid CAPTCHA)
-MAX_DELAY = 35  # Maximum seconds between requests
+MIN_DELAY = 0.8  # Minimum seconds between requests (increased to avoid CAPTCHA)
+MAX_DELAY = 2  # Maximum seconds between requests
 
 # UI interaction delays (for form filling, dropdown clicks within same page)
-UI_MIN_DELAY = 0.2  # Quick UI interactions
-UI_MAX_DELAY = 0.6  # Quick UI interactions
+UI_MIN_DELAY = 0.5  # Quick UI interactions
+UI_MAX_DELAY = 1.2  # Quick UI interactions
 
 # Sidebar filter delays (for optimized discovery mode)
 # These are longer delays to avoid triggering CAPTCHA when using sidebar filters
 # Note: 7-10s triggers CAPTCHA, 10-15s works fine
 # Testing 8-11s as potential optimization (monitor for CAPTCHA)
-SIDEBAR_FILTER_MIN_DELAY = 9   # Minimum seconds between sidebar filter changes
-SIDEBAR_FILTER_MAX_DELAY = 12  # Maximum seconds between sidebar filter changes
+SIDEBAR_FILTER_MIN_DELAY = 1.5   # Minimum seconds between sidebar filter changes
+SIDEBAR_FILTER_MAX_DELAY = 2.5  # Maximum seconds between sidebar filter changes
 
 # Search settings
-MAX_RESULTS_PER_PAGE = 50  # AHPRA typically shows ~50 results per page
+MAX_RESULTS_PER_PAGE = 100  # AHPRA typically shows ~50 results per page
 MAX_PREFIX_DEPTH = 4       # Maximum recursion depth (e.g., AAAA)
-PAGINATION_LIMIT = 1000    # Max pages to paginate through per prefix
+PAGINATION_LIMIT = 10    # Max pages to paginate through per prefix
 
 # Browser settings
 HEADLESS = True
-BROWSER_TIMEOUT = 60000    # 60 seconds
-PAGE_LOAD_TIMEOUT = 120000  # 120 seconds for slow pages
-VIEWPORT_WIDTH = 1920
-VIEWPORT_HEIGHT = 1080
+BROWSER_TIMEOUT = 10000    # 10 seconds
+PAGE_LOAD_TIMEOUT = 20000  # 20 seconds for slow pages
+VIEWPORT_WIDTH = 1080
+VIEWPORT_HEIGHT = 900
 
 # AHPRA URLs
 AHPRA_BASE_URL = "https://www.ahpra.gov.au"
@@ -67,8 +67,8 @@ CSV_SEPARATOR = ","
 
 # Checkpoint settings
 CHECKPOINT_INTERVAL = 50   # Save checkpoint every N practitioners
-AUTO_SAVE_INTERVAL = 300   # Auto-save every 5 minutes (in seconds)
-PROGRESS_DISPLAY_INTERVAL = 50  # Display progress every N practitioners
+AUTO_SAVE_INTERVAL = 100   # Auto-save every 5 minutes (in seconds)
+PROGRESS_DISPLAY_INTERVAL = 10  # Display progress every N practitioners
 
 # Logging settings
 LOG_LEVEL = "INFO"
@@ -85,8 +85,8 @@ USER_AGENTS = [
 ]
 
 # Retry settings
-MAX_RETRIES = 3
-RETRY_DELAY = 60  # 60 seconds between retries (give server time to recover)
+MAX_RETRIES = 2
+RETRY_DELAY = 5  # 60 seconds between retries (give server time to recover)
 
 # Data fields to extract
 DATA_FIELDS = [
